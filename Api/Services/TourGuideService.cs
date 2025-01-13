@@ -91,18 +91,27 @@ public class TourGuideService : ITourGuideService
         return visitedLocation;
     }
 
+    /// <summary>
+    /// Get the closest five tourist attractions to the user - no matter how far away they are
+    /// </summary>
+    /// <param name="visitedLocation"></param>
+    /// <returns></returns>
     public List<Attraction> GetNearByAttractions(VisitedLocation visitedLocation)
     {
-        List<Attraction> nearbyAttractions = new ();
-        foreach (var attraction in _gpsUtil.GetAttractions())
-        {
-            if (_rewardsService.IsWithinAttractionProximity(attraction, visitedLocation.Location))
-            {
-                nearbyAttractions.Add(attraction);
-            }
-        }
+        var allAttractions = _gpsUtil.GetAttractions();
 
-        return nearbyAttractions;
+        var closestAttractions = allAttractions
+            .Select(attraction => new
+            {
+                Attraction = attraction,
+                Distance = _rewardsService.GetDistance(attraction, visitedLocation.Location)
+            })
+            .OrderBy(result => result.Distance)
+            .Take(5)
+            .Select(result => result.Attraction)
+            .ToList();
+
+        return closestAttractions;
     }
 
     private void AddShutDownHook()

@@ -11,10 +11,12 @@ namespace TourGuide.Controllers;
 public class TourGuideController : ControllerBase
 {
     private readonly ITourGuideService _tourGuideService;
+    private readonly IRewardsService _rewardsService;
 
-    public TourGuideController(ITourGuideService tourGuideService)
+    public TourGuideController(ITourGuideService tourGuideService, IRewardsService rewardsService)
     {
         _tourGuideService = tourGuideService;
+        _rewardsService = rewardsService;
     }
 
     [HttpGet("getLocation")]
@@ -36,9 +38,37 @@ public class TourGuideController : ControllerBase
     [HttpGet("getNearbyAttractions")]
     public ActionResult<List<Attraction>> GetNearbyAttractions([FromQuery] string userName)
     {
-        var visitedLocation = _tourGuideService.GetUserLocation(GetUser(userName));
-        var attractions = _tourGuideService.GetNearByAttractions(visitedLocation);
-        return Ok(attractions);
+        var user = GetUser(userName);
+
+        var userLastVisitedLocation = _tourGuideService.GetUserLocation(GetUser(userName));
+        var closestAttractions = _tourGuideService.GetNearByAttractions(userLastVisitedLocation)
+            .Select(attraction => new
+            {
+                Attraction = attraction,
+                // Distance between the attraction and the user's location
+                Distance = _rewardsService.GetDistance(attraction, userLastVisitedLocation.Location),
+                // Retrieve the reward points for visiting the attraction
+                RewardPoints = _rewardsService.GetRewardPoints(attraction, user)
+            });
+
+        // JSON object with the requested information
+        var result = closestAttractions
+            .Select(attractionInfo => new
+            {
+                attractionInfo.Attraction.AttractionName,
+                AttractionLocation = new
+                {
+                    attractionInfo.Attraction.Latitude, attractionInfo.Attraction.Longitude
+                },
+                UserLocation = new
+                {
+                    userLastVisitedLocation.Location.Latitude, userLastVisitedLocation.Location.Longitude
+                },
+                attractionInfo.Distance,
+                attractionInfo.RewardPoints
+            });
+
+        return Ok(result);
     }
 
     [HttpGet("getRewards")]
