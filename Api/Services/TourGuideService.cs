@@ -1,4 +1,5 @@
-﻿using GpsUtil.Location;
+﻿using System.Collections.Concurrent;
+using GpsUtil.Location;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Globalization;
@@ -44,7 +45,7 @@ public class TourGuideService : ITourGuideService
         AddShutDownHook();
     }
 
-    public List<UserReward> GetUserRewards(User user)
+    public ConcurrentBag<UserReward> GetUserRewards(User user)
     {
         return user.UserRewards;
     }

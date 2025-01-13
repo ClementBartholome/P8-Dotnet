@@ -1,4 +1,5 @@
-﻿using GpsUtil.Location;
+﻿using System.Collections.Concurrent;
+using GpsUtil.Location;
 using TourGuide.Users;
 using TourGuide.Utilities;
 using TripPricer;
@@ -15,7 +16,7 @@ namespace TourGuide.Services.Interfaces
         List<Provider> GetTripDeals(User user);
         User GetUser(string userName);
         VisitedLocation GetUserLocation(User user);
-        List<UserReward> GetUserRewards(User user);
+        ConcurrentBag<UserReward> GetUserRewards(User user);
         VisitedLocation TrackUserLocation(User user);
     }
 }
