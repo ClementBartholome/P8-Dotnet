@@ -32,6 +32,10 @@ public class RewardsService : IRewardsService
         _proximityBuffer = _defaultProximityBuffer;
     }
 
+    /// <summary>
+    /// Calculate rewards for a user based on their visited locations
+    /// </summary>
+    /// <param name="user"></param>
     public void CalculateRewards(User user)
     {
         count++;
@@ -53,6 +57,7 @@ public class RewardsService : IRewardsService
         {
             foreach (var attraction in attractions)
             {
+                // Check if the attraction has not been rewarded yet and is near the visited location
                 if (!existingRewards.Contains(attraction.AttractionName) &&
                     NearAttraction(visitedLocation, attraction))
                 {
