@@ -98,12 +98,13 @@ public class TourGuideService : ITourGuideService
         return visitedLocation;
     }
     
+    // Maximize the number of attractions that can be processed in parallel without blocking the main thread
     public async Task<VisitedLocation> TrackUserLocationAsync(User user)
     {
         var visitedLocation = await _gpsUtil.GetUserLocationAsync(user.UserId);
         user.AddToVisitedLocations(visitedLocation);
     
-        // On utilise la version parallèle des calculs de récompenses
+        // Use parallel processing to calculate rewards for all attractions
         var rewards = await _rewardsService.CalculateRewardsParallel(user, visitedLocation, _cachedAttractions);
         
         foreach (var reward in rewards)

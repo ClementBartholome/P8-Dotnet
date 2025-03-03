@@ -108,6 +108,11 @@ public class GpsUtil
             rateLimiter.Release();
         }
     }
+    
+    public Task<List<Attraction>> GetAttractionsAsync()
+    {
+        return Task.Run(GetAttractions);
+    }
 
     private void Sleep()
     {
