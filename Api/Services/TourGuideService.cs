@@ -21,6 +21,7 @@ public class TourGuideService : ITourGuideService
     private readonly Dictionary<string, User> _internalUserMap = new();
     private const string TripPricerApiKey = "test-server-api-key";
     private bool _testMode = true;
+    private List<Attraction> _cachedAttractions;
 
     public TourGuideService(ILogger<TourGuideService> logger, IGpsUtil gpsUtil, IRewardsService rewardsService, ILoggerFactory loggerFactory)
     {
@@ -28,6 +29,7 @@ public class TourGuideService : ITourGuideService
         _tripPricer = new();
         _gpsUtil = gpsUtil;
         _rewardsService = rewardsService;
+        _cachedAttractions = _gpsUtil.GetAttractions();
 
         CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -53,6 +55,11 @@ public class TourGuideService : ITourGuideService
     public VisitedLocation GetUserLocation(User user)
     {
         return user.VisitedLocations.Any() ? user.GetLastVisitedLocation() : TrackUserLocation(user);
+    }
+    
+    public async Task<VisitedLocation> GetUserLocationAsync(User user)
+    {
+        return user.VisitedLocations.Any() ? user.GetLastVisitedLocation() : await TrackUserLocationAsync(user);
     }
 
     public User GetUser(string userName)
@@ -88,6 +95,22 @@ public class TourGuideService : ITourGuideService
         VisitedLocation visitedLocation = _gpsUtil.GetUserLocation(user.UserId);
         user.AddToVisitedLocations(visitedLocation);
         _rewardsService.CalculateRewards(user);
+        return visitedLocation;
+    }
+    
+    public async Task<VisitedLocation> TrackUserLocationAsync(User user)
+    {
+        var visitedLocation = await _gpsUtil.GetUserLocationAsync(user.UserId);
+        user.AddToVisitedLocations(visitedLocation);
+    
+        // On utilise la version parallèle des calculs de récompenses
+        var rewards = await _rewardsService.CalculateRewardsParallel(user, visitedLocation, _cachedAttractions);
+        
+        foreach (var reward in rewards)
+        {
+            user.AddUserReward(reward);
+        }
+    
         return visitedLocation;
     }
 

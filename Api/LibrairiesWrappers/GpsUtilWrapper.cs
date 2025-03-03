@@ -5,12 +5,7 @@ namespace TourGuide.LibrairiesWrappers;
 
 public class GpsUtilWrapper : IGpsUtil
 {
-    private readonly GpsUtil.GpsUtil _gpsUtil;
-
-    public GpsUtilWrapper()
-    {
-        _gpsUtil = new();
-    }
+    private readonly GpsUtil.GpsUtil _gpsUtil = new();
 
     public VisitedLocation GetUserLocation(Guid userId)
     {
@@ -20,5 +15,10 @@ public class GpsUtilWrapper : IGpsUtil
     public List<Attraction> GetAttractions()
     {
         return _gpsUtil.GetAttractions();
+    }
+    
+    public async Task<VisitedLocation> GetUserLocationAsync(Guid userId)
+    {
+        return await _gpsUtil.GetUserLocationAsync(userId);
     }
 }

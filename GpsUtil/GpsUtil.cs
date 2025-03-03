@@ -34,6 +34,34 @@ public class GpsUtil
             rateLimiter.Release();
         }
     }
+    
+    public async Task<VisitedLocation> GetUserLocationAsync(Guid userId)
+    {
+        // Wait to acquire a token from the semaphore limiting to 1000 concurrent requests
+        // The rate limiter protects against system overload from too many concurrent accesses
+        await rateLimiter.WaitAsync();
+        try
+        {
+            // Simulate a short 10ms network delay without blocking the execution thread
+            await Task.Delay(10);
+
+            double longitude = ThreadLocalRandom.NextDouble(-180.0, 180.0);
+            longitude = Math.Round(longitude, 6);
+
+            double latitude = ThreadLocalRandom.NextDouble(-90, 90);
+            latitude = Math.Round(latitude, 6);
+
+            VisitedLocation visitedLocation = new(userId, new Locations(latitude, longitude), DateTime.UtcNow);
+
+            return visitedLocation;
+        }
+        finally
+        {
+            // Ensure the semaphore token is released even in case of an error
+            // Essential to prevent resource leaks and system lockups
+            rateLimiter.Release();
+        }
+    }
 
     public List<Attraction> GetAttractions()
     {

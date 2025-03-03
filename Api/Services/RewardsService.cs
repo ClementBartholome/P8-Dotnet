@@ -81,6 +81,40 @@ public class RewardsService : IRewardsService
             user.AddUserReward(reward);
         }
     }
+    
+    public async Task<List<UserReward>> CalculateRewardsParallel(User user, VisitedLocation newLocation, List<Attraction> attractions)
+    {
+        // Get existing rewards to avoid duplicates
+        var existingRewards = user.UserRewards.Select(r => r.Attraction.AttractionName).ToHashSet();
+    
+        // List to hold all tasks to be executed in parallel
+        var tasks = new List<Task<UserReward>>();
+
+        foreach (var attraction in attractions)
+        {
+            // Check if the attraction has not been rewarded yet and the user is nearby
+            if (!existingRewards.Contains(attraction.AttractionName) && 
+                NearAttraction(newLocation, attraction))
+            {
+                // Task.Run launches each reward calculation on a different thread from the thread pool
+                // This allows multiple calculations to run concurrently
+                tasks.Add(Task.Run(async () => {
+                    // GetRewardPointsAsync invokes RewardCentral which contains a random delay up to 1000ms
+                    var points = await GetRewardPointsAsync(attraction, user);
+                    return new UserReward(newLocation, attraction, points);
+                }));
+            }
+        }
+
+        // Task.WhenAll returns a task that completes when all tasks in the list have completed
+        // This allows the method to await the completion of all reward calculations    
+        return (await Task.WhenAll(tasks)).ToList();
+    }
+
+    private Task<int> GetRewardPointsAsync(Attraction attraction, User user)
+    {
+        return Task.FromResult(_rewardsCentral.GetAttractionRewardPoints(attraction.AttractionId, user.UserId));
+    }
 
     public bool IsWithinAttractionProximity(Attraction attraction, Locations location)
     {
