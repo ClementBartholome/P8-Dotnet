@@ -1,4 +1,5 @@
-﻿using GpsUtil.Location;
+﻿using System.Collections.Concurrent;
+using GpsUtil.Location;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Globalization;
@@ -20,6 +21,7 @@ public class TourGuideService : ITourGuideService
     private readonly Dictionary<string, User> _internalUserMap = new();
     private const string TripPricerApiKey = "test-server-api-key";
     private bool _testMode = true;
+    private List<Attraction> _cachedAttractions;
 
     public TourGuideService(ILogger<TourGuideService> logger, IGpsUtil gpsUtil, IRewardsService rewardsService, ILoggerFactory loggerFactory)
     {
@@ -27,6 +29,7 @@ public class TourGuideService : ITourGuideService
         _tripPricer = new();
         _gpsUtil = gpsUtil;
         _rewardsService = rewardsService;
+        _cachedAttractions = _gpsUtil.GetAttractions();
 
         CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
@@ -44,7 +47,7 @@ public class TourGuideService : ITourGuideService
         AddShutDownHook();
     }
 
-    public List<UserReward> GetUserRewards(User user)
+    public ConcurrentBag<UserReward> GetUserRewards(User user)
     {
         return user.UserRewards;
     }
@@ -52,6 +55,11 @@ public class TourGuideService : ITourGuideService
     public VisitedLocation GetUserLocation(User user)
     {
         return user.VisitedLocations.Any() ? user.GetLastVisitedLocation() : TrackUserLocation(user);
+    }
+    
+    public async Task<VisitedLocation> GetUserLocationAsync(User user)
+    {
+        return user.VisitedLocations.Any() ? user.GetLastVisitedLocation() : await TrackUserLocationAsync(user);
     }
 
     public User GetUser(string userName)
@@ -89,19 +97,45 @@ public class TourGuideService : ITourGuideService
         _rewardsService.CalculateRewards(user);
         return visitedLocation;
     }
+    
+    // Maximize the number of attractions that can be processed in parallel without blocking the main thread
+    public async Task<VisitedLocation> TrackUserLocationAsync(User user)
+    {
+        var visitedLocation = await _gpsUtil.GetUserLocationAsync(user.UserId);
+        user.AddToVisitedLocations(visitedLocation);
+    
+        // Use parallel processing to calculate rewards for all attractions
+        var rewards = await _rewardsService.CalculateRewardsParallel(user, visitedLocation, _cachedAttractions);
+        
+        foreach (var reward in rewards)
+        {
+            user.AddUserReward(reward);
+        }
+    
+        return visitedLocation;
+    }
 
+    /// <summary>
+    /// Get the closest five tourist attractions to the user - no matter how far away they are
+    /// </summary>
+    /// <param name="visitedLocation"></param>
+    /// <returns></returns>
     public List<Attraction> GetNearByAttractions(VisitedLocation visitedLocation)
     {
-        List<Attraction> nearbyAttractions = new ();
-        foreach (var attraction in _gpsUtil.GetAttractions())
-        {
-            if (_rewardsService.IsWithinAttractionProximity(attraction, visitedLocation.Location))
-            {
-                nearbyAttractions.Add(attraction);
-            }
-        }
+        var allAttractions = _gpsUtil.GetAttractions();
 
-        return nearbyAttractions;
+        var closestAttractions = allAttractions
+            .Select(attraction => new
+            {
+                Attraction = attraction,
+                Distance = _rewardsService.GetDistance(attraction, visitedLocation.Location)
+            })
+            .OrderBy(result => result.Distance)
+            .Take(5)
+            .Select(result => result.Attraction)
+            .ToList();
+
+        return closestAttractions;
     }
 
     private void AddShutDownHook()
