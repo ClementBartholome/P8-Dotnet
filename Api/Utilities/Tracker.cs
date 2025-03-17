@@ -23,6 +23,7 @@ public class Tracker
     public void StopTracking()
     {
         _cancellationTokenSource.Cancel();
+        _cancellationTokenSource.Dispose();
     }
 
     public async Task Run()
