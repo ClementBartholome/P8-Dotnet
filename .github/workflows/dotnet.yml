@@ -23,7 +23,7 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         dotnet tool install --global dotnet-sonarscanner
-        dotnet sonarscanner begin /k:"mon-projet" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$SONAR_TOKEN"
+        dotnet sonarscanner begin /k:"p8-dotnet" /o:"clementbartholome" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="$SONAR_TOKEN"
     
     - name: Restore dependencies
       run: dotnet restore
