@@ -82,7 +82,15 @@ public class TourGuideController : ControllerBase
     public ActionResult<List<Provider>> GetTripDeals([FromQuery] string userName)
     {
         var deals = _tourGuideService.GetTripDeals(GetUser(userName));
-        return Ok(deals);
+    
+        var result = deals.Select(p => new
+        {
+            p.Name,
+            p.Price,
+            p.TripId
+        });
+    
+        return Ok(result);
     }
 
     private User GetUser(string userName)
