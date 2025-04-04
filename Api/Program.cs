@@ -16,6 +16,7 @@ builder.Services.AddScoped<IRewardsService, RewardsService>();
 builder.Services.AddScoped<ITourGuideService, TourGuideService>();
 builder.Services.AddScoped<IGpsUtil, GpsUtilWrapper>();
 builder.Services.AddScoped<IRewardCentral, RewardCentralWrapper>();
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 

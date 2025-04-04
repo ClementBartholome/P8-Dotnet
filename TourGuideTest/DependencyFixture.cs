@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Memory;
 using TourGuide.LibrairiesWrappers.Interfaces;
 using TourGuide.Services.Interfaces;
 using TourGuide.Services;
@@ -35,7 +36,8 @@ namespace TourGuideTest
             InternalTestHelper.SetInternalUserNumber(internalUserNumber);
 
             RewardCentral = new RewardCentralWrapper();
-            GpsUtil = new GpsUtilWrapper();
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+            GpsUtil = new GpsUtilWrapper(memoryCache);
             RewardsService = new RewardsService(GpsUtil, RewardCentral);
             TourGuideService = new TourGuideService(tourGuideLogger, GpsUtil, RewardsService, loggerFactory);
         }
