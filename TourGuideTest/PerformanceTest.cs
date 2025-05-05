@@ -109,11 +109,10 @@ namespace TourGuideTest
 
             var now = DateTime.Now;
 
-            // Process multiple users simultaneously across CPU cores
-            // This is a more efficient way to process large amounts of data
-            // than using a simple ForEach loop
-            Parallel.ForEach(allUsers,
-                u => { u.AddToVisitedLocations(new VisitedLocation(u.UserId, attraction, now)); });
+            foreach (var user in allUsers)
+            {
+                user.AddToVisitedLocations(new VisitedLocation(user.UserId, attraction, now));
+            }
 
             // Semaphore limiting to 1000 the number of simultaneous operations
             // to avoid overloading the system with 100000 requests at the same time
