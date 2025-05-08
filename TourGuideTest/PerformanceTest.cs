@@ -114,42 +114,22 @@ namespace TourGuideTest
                 user.AddToVisitedLocations(new VisitedLocation(user.UserId, attraction, now));
             }
 
-            // Semaphore limiting to 1000 the number of simultaneous operations
-            // to avoid overloading the system with 100000 requests at the same time
-            var semaphore = new SemaphoreSlim(1000);
-
-            var tasks = new List<Task>();
-
             // Retrieve all attractions once to avoid multiple calls for each user
             var attractions = _fixture.GpsUtil.GetAttractions();
 
             // For each user, create an asynchronous task to calculate rewards
-            foreach (var user in allUsers)
-            {
-                // Wait until we have a free slot in our semaphore (max 1000 concurrent operations)
-                await semaphore.WaitAsync();
-
-                // Start a new background task for reward calculation
-                tasks.Add(Task.Run(async () =>
+            var tasks = allUsers.Select(user => Task.Run(async () =>
                 {
-                    try
-                    {
-                        var rewards = await _fixture.RewardsService.CalculateRewardsParallel(user,
-                            user.GetLastVisitedLocation(), attractions);
+                    var rewards =
+                        await _fixture.RewardsService.CalculateRewardsParallel(user, user.GetLastVisitedLocation(),
+                            attractions);
 
-                        foreach (var reward in rewards)
-                        {
-                            user.AddUserReward(reward);
-                        }
-                    }
-                    finally
+                    foreach (var reward in rewards)
                     {
-                        // Always release the semaphore slot regardless of success/failure
-                        // Ensures resources are properly released even on exceptions
-                        semaphore.Release();
+                        user.AddUserReward(reward);
                     }
-                }));
-            }
+                }))
+                .ToList();
 
             // Wait for all background tasks to complete before proceeding
             await Task.WhenAll(tasks);

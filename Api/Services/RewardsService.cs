@@ -111,9 +111,14 @@ public class RewardsService : IRewardsService
         return (await Task.WhenAll(tasks)).ToList();
     }
 
-    private Task<int> GetRewardPointsAsync(Attraction attraction, User user)
+    private async Task<int> GetRewardPointsAsync(Attraction attraction, User user)
     {
-        return Task.FromResult(_rewardsCentral.GetAttractionRewardPoints(attraction.AttractionId, user.UserId));
+        return await _rewardsCentral.GetAttractionRewardPointsAsync(attraction.AttractionId, user.UserId);
+    }
+    
+    public int GetRewardPoints(Attraction attraction, User user)
+    {
+        return _rewardsCentral.GetAttractionRewardPoints(attraction.AttractionId, user.UserId);
     }
 
     public bool IsWithinAttractionProximity(Attraction attraction, Locations location)
@@ -125,11 +130,6 @@ public class RewardsService : IRewardsService
     private bool NearAttraction(VisitedLocation visitedLocation, Attraction attraction)
     {
         return GetDistance(attraction, visitedLocation.Location) <= _proximityBuffer;
-    }
-
-    public int GetRewardPoints(Attraction attraction, User user)
-    {
-        return _rewardsCentral.GetAttractionRewardPoints(attraction.AttractionId, user.UserId);
     }
 
     public double GetDistance(Locations loc1, Locations loc2)
