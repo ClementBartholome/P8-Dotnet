@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -11,16 +12,16 @@ public class RewardCentral
 {
     public int GetAttractionRewardPoints(Guid attractionId, Guid userId)
     {
-        int randomDelay = new Random().Next(1, 1000);
+        int randomDelay = RandomNumberGenerator.GetInt32(1, 1001);
         Thread.Sleep(randomDelay);
 
-        int randomInt = new Random().Next(1, 1000);
+        int randomInt = RandomNumberGenerator.GetInt32(1, 1001);
         return randomInt;
     }
     
     public async Task<int> GetAttractionRewardPointsAsync(Guid attractionId, Guid userId)
     {
-        await Task.Delay(new Random().Next(1, 1000)); // simulate async I/O
-        return new Random().Next(1, 1000);
+        await Task.Delay(RandomNumberGenerator.GetInt32(1, 1001)); // simulate async I/O
+        return RandomNumberGenerator.GetInt32(1, 1001);
     }
 }
